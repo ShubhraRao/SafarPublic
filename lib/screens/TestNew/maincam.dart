@@ -65,7 +65,7 @@ class _CameraModeState extends State<CameraMode> {
   _CameraModeState(this.uid);
   String finalurl;
 
-  TextEditingController landmark= TextEditingController();
+  TextEditingController landmark = TextEditingController();
 
   Future getImage(bool isCamera) async {
     File image;
@@ -83,13 +83,13 @@ class _CameraModeState extends State<CameraMode> {
     });
   }
 
-  List<DocumentSnapshot> urllist = List(); 
-  getList()
-  async {
+  List<DocumentSnapshot> urllist = List();
+  getList() async {
     QuerySnapshot querySnapshottravel =
         await Firestore.instance.collection("location_travel").getDocuments();
     list = querySnapshottravel.documents;
-    QuerySnapshot qs = await Firestore.instance.collection('imageUrl').getDocuments();
+    QuerySnapshot qs =
+        await Firestore.instance.collection('imageUrl').getDocuments();
     urllist = qs.documents;
     setState(() {
       finalurl = urllist[0].data["url"];
@@ -98,77 +98,77 @@ class _CameraModeState extends State<CameraMode> {
     print(finalurl);
   }
 
-  void initState(){
+  void initState() {
     getList();
     super.initState();
   }
-
 
 //verify(){
   Future verify() async {
     setState(() {
       confirm = 3;
     });
-    var stream = new http.ByteStream(_image.openRead());
-    // get file length
-    var length = await _image.length();
+    // var stream = new http.ByteStream(_image.openRead());
+    // // get file length
+    // var length = await _image.length();
 
-    // string to uri
-    var uri = Uri.parse(finalurl);
+    // // string to uri
+    // var uri = Uri.parse(finalurl);
 
-    // create multipart request
-    var request = new http.MultipartRequest("POST", uri);
+    // // create multipart request
+    // var request = new http.MultipartRequest("POST", uri);
 
-    // multipart that takes file
-    var multipartFile = new http.MultipartFile('images', stream, length,
-        filename: "filename.jpg");
+    // // multipart that takes file
+    // var multipartFile = new http.MultipartFile('images', stream, length,
+    //     filename: "filename.jpg");
 
-    // add file to multipart
-    request.files.add(multipartFile);
+    // // add file to multipart
+    // request.files.add(multipartFile);
 
-    // send
-    var streamedResponse = await request.send();
+    // // send
+    // var streamedResponse = await request.send();
 
-    var response = await http.Response.fromStream(streamedResponse);
-    print(response.body);
+    // var response = await http.Response.fromStream(streamedResponse);
+    // print(response.body);
 
-    if (response.statusCode != 200) {
-      showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            // return object of type Dialog
-            return AlertDialog(
-              title:
-                  new Text("Could not connect to server.\n Please try again"),
-            );
-          });
-      setState(() {
-        _image = null;
-        pothole = 0;
-      });
-      throw Exception('Failed to connect');
-    }
-    final jsonResponse = json.decode(response.body);
-    Response product = new Response.fromJson(jsonResponse);
+    // if (response.statusCode != 200) {
+    //   showDialog(
+    //       context: context,
+    //       builder: (BuildContext context) {
+    //         // return object of type Dialog
+    //         return AlertDialog(
+    //           title:
+    //               new Text("Could not connect to server.\n Please try again"),
+    //         );
+    //       });
+    //   setState(() {
+    //     _image = null;
+    //     pothole = 0;
+    //   });
+    //   throw Exception('Failed to connect');
+    // }
+    // final jsonResponse = json.decode(response.body);
+    // Response product = new Response.fromJson(jsonResponse);
 
-    print(product.resp);
-    if (product.resp == null)
-      // nopot();
-      nopotalert();
-    else {
-      Data data = product.resp[0];
-      if (data.clas == "Pothole" && data.confidence >= 0.3) {
-        //print("Verify fn");
+    // print(product.resp);
+    // if (product.resp == null)
+    //   // nopot();
+    //   nopotalert();
+    // else {
+    //   Data data = product.resp[0];
+    //   if (data.clas == "Pothole" && data.confidence >= 0.3) {
+    //     //print("Verify fn");
         setState(() {
           pothole = 1;
         });
-      } else
-        // nopot();
-        nopotalert();
-      setState(() {
-        confirm = 0;
-      });
-    }
+  
+    //   } else
+    //     // nopot();
+    //     nopotalert();
+    //   setState(() {
+    //     confirm = 0;
+    //   });
+    // }
   }
 
   void _getCurrentLocation(String spriority, String sdesc) async {
@@ -204,10 +204,12 @@ class _CameraModeState extends State<CameraMode> {
       var loc_lon2 = double.parse(loc_lon);
       List uidarr;
       // await DBService(docid: "docid").addData(loc_lat, loc_lon, time, loc_pin, current_address, url);
-      if (list.length != null) {
+if (list.length != null) {
         for (int i = 0; i < list.length; i++)
         {
+
         uidarr = list[i].data["userid"].split(",");
+
         String u=list[i].data["userid"];
         if (list[i].data["lat"].toString().substring(0, 7) ==
                       loc_lat.toString().substring(0, 7) &&
@@ -220,13 +222,14 @@ class _CameraModeState extends State<CameraMode> {
 //            print(list[i].data["userid"]);
 //            print(uid);
             //  for()
+
             var p =list[i].data["NumberOfReportings"];
             int j;
             for ( j = 0; j < uidarr.length; j++) {
               if (uidarr[j] == uid)
                 break;
             }
-            if (j == uidarr.length-1) {
+            if (j == uidarr.length) {
               databaseReference
                   .collection("location_travel")
                   .document(list[i].documentID)
@@ -234,55 +237,47 @@ class _CameraModeState extends State<CameraMode> {
                 "uid": u + "," + uid,
                 "NumberOfReportings": p + 1,
                 "timeStamp": DateTime.now(),
+                "landmark": landmark.text,
               }).then((_) {
                 print("update success!");
               });
-            break;
-          } else if (list[i].data["lat"].toString().substring(0, 7) ==
-                      loc_lat.toString().substring(0, 7) &&
-                  list[i].data["lon"].toString().substring(0, 7) ==
-                      loc_lon.toString().substring(0, 7) &&
-                  list[i].data["userid"] == uid ||
-              list[i].data["address"].toString() == current_address &&
-                  list[i].data["userid"] == uid) {
-            print("DO NOT UPDATE");
-            break;
-          // break;
-            }
-          }else if (list[i].data["lat"].toString().substring(0, 7) ==
-                      loc_lat.toString().substring(0, 7) &&
-                  list[i].data["lon"].toString().substring(0, 7) ==
-                      loc_lon.toString().substring(0, 7) ||
-              list[i].data["address"].toString() == current_address ) {
-          int j;
-          for (j = 0; j < uidarr.length; j++) {
-            if (uidarr[j] == uid)
               break;
-          }
-          if (j < uidarr.length - 1) {
-            print("DO NOT UPDATE");
-            break;
-          }
-        }else {
+            }
+            else if (j < uidarr.length ) {
+              print("DO NOT UPDATE");
+              break;
+            }
+    }
+//          else if (list[i].data["lat"].toString().substring(0, 7) ==
+//                      loc_lat.toString().substring(0, 7) &&
+//                  list[i].data["lon"].toString().substring(0, 7) ==
+//                      loc_lon.toString().substring(0, 7) ||
+//              list[i].data["address"].toString() == current_address ) {
+//          int j;
+//          for (j = 0; j < uidarr.length; j++) {
+//            if (uidarr[j] == uid)
+//              break;
+//          }
+//
+ //       }
+        else {
             check = 1;
           }
         }
       } else {
-        uploadData(uid, loc_lat2, loc_lon2, time, loc_pin, current_address,	
-            place, 1,spriority, sdesc);
+        uploadData(uid, loc_lat2, loc_lon2, time, loc_pin, current_address,
+            place, 1, spriority, sdesc);
       }
       if (check == 1) {
         var priority = 1;
 
-        uploadData(uid, loc_lat2, loc_lon2, time, loc_pin, current_address,	
+        uploadData(uid, loc_lat2, loc_lon2, time, loc_pin, current_address,
             place, priority, spriority, sdesc);
       }
       _image = null;
       pothole = 0;
     });
   }
-
-
 
   final databaseReference = Firestore.instance;
   var docId;
@@ -293,7 +288,6 @@ class _CameraModeState extends State<CameraMode> {
       DateTime timeStamp,
       String pincode,
       String address,
-      
       Placemark place,
       var priority,
       String spriority,
@@ -327,7 +321,8 @@ class _CameraModeState extends State<CameraMode> {
       'administrativeArea': place.administrativeArea,
       'NumberOfReportings': priority,
       'SurveyPriority': spriority,
-      'SurveyDescrption': sdesc
+      'SurveyDescrption': sdesc,
+      'landmark': landmark.text,
     }).then((_) {
       // print("success!");
       setState(() {
@@ -437,8 +432,6 @@ class _CameraModeState extends State<CameraMode> {
     );
   }
 
- 
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -457,58 +450,67 @@ class _CameraModeState extends State<CameraMode> {
             backgroundColor: Color(0xFF89216B),
             child: Icon(Icons.camera_alt),
           ),
-          body: (!isLoading) ? Center(child: CircularProgressIndicator()) : new Stack(children: <Widget>[
-            new Container(
-              decoration: new BoxDecoration(
-                image: new DecorationImage(
-                  image: new AssetImage("assets/bgimages/wallpaperdesign.png"),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            Center(
-              child: new Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  (_image == null)
-                      ? Image(
-                          width: 200,
-                          height: 200,
-                          image: AssetImage("assets/bgimages/camtestpot.png"),
-                        )
-                      : pothole == 1
-                          ? uploadthewholething()
-                          : Center(
-                              child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: <Widget>[
-                                    Image.file(_image,
-                                        height: 300.0, width: 300.0),
-                                    SizedBox(height: 30.0),
-                                    FlatButton(
-                                        color: Colors.transparent,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(80.0),
-                                            side: BorderSide(
-                                                color: Colors.black)),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12.0),
-                                          child: Text("UPLOAD IMAGE",
-                                              style: TextStyle(
-                                                  color: Colors.black)),
-                                        ),
-                                        onPressed: () {
-                                          //SizedBox(height: 0, width: 0);
-                                          verify();
-                                        })
-                                  ]),
-                            ),
-                  confirmFunct(),
-                ],
-              ),
-            )
-          ])),
+          body: (!isLoading)
+              ? Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  child: new Stack(children: <Widget>[
+                    new Container(
+                      decoration: new BoxDecoration(
+                        image: new DecorationImage(
+                          image: new AssetImage(
+                              "assets/bgimages/wallpaperdesign.png"),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: new Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          (_image == null)
+                              ? Image(
+                                  width: 200,
+                                  height: 200,
+                                  image: AssetImage(
+                                      "assets/bgimages/camtestpot.png"),
+                                )
+                              : pothole == 1
+                                  ? uploadthewholething()
+                                  : Center(
+                                      child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: <Widget>[
+                                            Image.file(_image,
+                                                height: 300.0, width: 300.0),
+                                            SizedBox(height: 30.0),
+                                            FlatButton(
+                                                color: Colors.transparent,
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            80.0),
+                                                    side: BorderSide(
+                                                        color: Colors.black)),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(
+                                                      12.0),
+                                                  child: Text("UPLOAD IMAGE",
+                                                      style: TextStyle(
+                                                          color: Colors.black)),
+                                                ),
+                                                onPressed: () {
+                                                  //SizedBox(height: 0, width: 0);
+                                                  verify();
+                                                })
+                                          ]),
+                                    ),
+                          confirmFunct(),
+                        ],
+                      ),
+                    )
+                  ]),
+                )),
     );
   }
 
@@ -517,11 +519,11 @@ class _CameraModeState extends State<CameraMode> {
       if (val == 1) {
         roadgroup = 1;
         p1 = true;
-        survey="Main road";
+        survey = "Main road";
       } else {
         roadgroup = 2;
         p1 = false;
-        survey="Residential road";
+        survey = "Residential road";
       }
     });
   }
@@ -531,11 +533,11 @@ class _CameraModeState extends State<CameraMode> {
       if (val == 1) {
         placegroup = 1;
         p2 = true;
-        survey = survey +","+ "Centre of the road";
+        survey = survey + "," + "Centre of the road";
       } else {
         placegroup = 2;
         p2 = false;
-        survey = survey +","+ "Edge of the road";
+        survey = survey + "," + "Edge of the road";
       }
     });
   }
@@ -545,11 +547,11 @@ class _CameraModeState extends State<CameraMode> {
       if (val == 1) {
         sizegroup = 1;
         p3 = true;
-        survey = survey + ","+"Big pothole";
+        survey = survey + "," + "Big pothole";
       } else {
         sizegroup = 2;
         p3 = false;
-        survey = survey +","+ "Small pothole";
+        survey = survey + "," + "Small pothole";
       }
     });
   }
@@ -609,10 +611,8 @@ class _CameraModeState extends State<CameraMode> {
                   onChanged: size),
               TextField(
                 controller: landmark,
-                decoration: InputDecoration(
-                  hintText: 'Enter a landmark'
-                ),
-              ), 
+                decoration: InputDecoration(hintText: 'Enter a landmark'),
+              ),
               FlatButton(
                   color: Colors.transparent,
                   shape: RoundedRectangleBorder(
@@ -645,7 +645,7 @@ class _CameraModeState extends State<CameraMode> {
                     var url;
                     //url = downloadUrl.toString();
 //print(priority);
-                    _getCurrentLocation(url, surveypriority);
+                    _getCurrentLocation(surveypriority, survey);
                   }),
             ],
           ),

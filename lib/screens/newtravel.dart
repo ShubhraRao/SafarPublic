@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:potholedetection/screens/New/home.dart';
 import 'package:sensors/sensors.dart';
+import 'dart:math';
 
 class TravelMode extends StatefulWidget {
   final String uid;
@@ -22,10 +23,13 @@ class _TravelModeState extends State<TravelMode> {
       <StreamSubscription<dynamic>>[];
 
   bool isLoading = false;
-  int count = 0, downfirst = 0, upfirst = 0, c = 0, inc = 0;
+  int count = 0, downfirst = 0, upfirst = 0, c = 0, inc = 0; int timecount=0;
   var time;
   int index = 0;
-  double x, y, z;
+  double x, y, z,gx,gy,gz, acc;
+  int axis;
+  //let timestamp = null;
+  //double alpha = 0,beta =0, gamma = 0, bias = 0.98,scale = pi / 2;
   String loc_data = "";
   String current_address = "";
   var loc_lat, loc_lon;
@@ -36,7 +40,64 @@ class _TravelModeState extends State<TravelMode> {
   int paused = 0;
   int resumed = 0;
   QuerySnapshot querySnapshot;
+   double teta;
+   double pie;
+   bool stable = true;
+   double theta(double y){
+    double teta = acos(y/9.800); // gravity is taken as 9.8m/s2
+    return teta;
+  }
 
+   double pi(double x, double z){
+    double pie = atan(z/x);
+    return pie;
+  }
+   double reOrientX (double x, double y, double z) {
+
+    if (this.stable) {
+      teta = this.theta(y);
+      pie = this.pi(x, z);
+      this.stable= false;
+    }
+
+    double xPie = x*cos(pie) - z*sin(pie);
+    double yPie = y;
+    double zPie = x*sin(pie) + z*cos(pie);
+    double xTeta = xPie*cos(teta) + yPie*sin(teta);
+    double zTeta = zPie;
+    double alpha = atan(xPie/zPie);
+    double xAplha = xTeta*cos(alpha) - zTeta*sin(alpha);
+    return xAplha;
+  }
+  double reOrientY (double x, double y, double z) {
+
+    if (this.stable) {
+      teta = this.theta(y);
+      pie = this.pi(x, z);
+      this.stable=false;
+    }
+    double xPie = x*cos(pie) - z*sin(pie);
+    double yPie = y;
+    double yTeta = -xPie*sin(teta) + yPie*cos(teta);
+    return yTeta;
+  }
+   double reorientZ (double x, double y, double z) {
+
+    if (this.stable) {
+      teta = this.theta(y);
+      pie = this.pi(x, z);
+      this.stable=false;
+    }
+    double xPie = x*cos(pie) - z*sin(pie);
+    double yPie = y;
+    double zPie = x*sin(pie) + z*cos(pie);
+    double xTeta = xPie*cos(teta) + yPie*sin(teta);
+    double zTeta = zPie;
+    double alpha = atan(xPie/zPie);
+    double zAlpha = xTeta*sin(alpha) + zTeta*cos(alpha);
+    return zAlpha;
+
+  }
   _TravelModeState(this.uid);
   StreamSubscription accel;
 
@@ -56,31 +117,49 @@ class _TravelModeState extends State<TravelMode> {
           y = event.y;
           z = event.z;
 
-          if (downfirst == 0 && y < 6 && upfirst == 0)
-            downfirst = 1;
-          else if (upfirst == 0 && y > 12 && downfirst == 0) upfirst = 1;
+          if(timecount<50)
+           {
+          if(y<=10&&y>=7)
+            axis = 2;
+            else if(z<=10&&z>=7)
+              axis = 3;
+            else if(x>=10&&x<7)
+              axis =1;
+            }
+         // else print("Done ");
+          timecount++;
+          if (axis == 2)
+            acc = event.y;
+          else if(axis == 3)
+            acc= event.z;
+          else if (axis == 1)
+            acc=event.x;
 
+
+          if (downfirst == 0 && acc < 6 && upfirst == 0)
+            downfirst = 1;
+          else if (upfirst == 0 &&  acc > 12 && downfirst == 0) upfirst = 1;
           if (upfirst == 1) {
-            if (y > 9 && y < 11 && c > 3) {
+            if (acc > 9 && acc < 11 && c > 3) {
               upfirst = 0;
               c = 0;
-            } else if (y > 11 && inc == 0) {
+            } else if (acc > 11 && inc == 0) {
               c++;
               inc = 1;
-            } else if (y < 9 && inc == 1) {
+            } else if (acc < 9 && inc == 1) {
               c++;
               inc = 0;
             }
           } else if (downfirst == 1) {
-            if (y > 9 && y < 11 && c > 2) {
+            if (acc > 9 && acc < 11 && c > 2) {
               //count++;
               getLocation();
               downfirst = 0;
               c = 0;
-            } else if (y > 11 && inc == 0) {
+            } else if (acc > 11 && inc == 0) {
               c++;
               inc = 1;
-            } else if (y < 9 && inc == 1) {
+            } else if (acc < 9 && inc == 1) {
               c++;
               inc = 0;
             }
@@ -103,9 +182,7 @@ class _TravelModeState extends State<TravelMode> {
   Future<void> getLocation() async {
     final position = await Geolocator()
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-    print(position);
-    print("Hello");
-    print(position.altitude);
+
     List<Placemark> placemark = await Geolocator()
         .placemarkFromCoordinates(position.latitude, position.longitude);
     Placemark place = placemark[0];
@@ -149,7 +226,6 @@ class _TravelModeState extends State<TravelMode> {
               count++;
             });
           var p = list[i].data["NumberOfReportings"];
-          var u= list[i].data["userid"];
           print("Priority is: " + p.toString());
           databaseReference
               .collection("location_travel")
@@ -157,7 +233,7 @@ class _TravelModeState extends State<TravelMode> {
               .updateData({
             "NumberOfReportings": p + 1,
             "timeStamp": DateTime.now(),
-            "userid": u+"," +uid,
+            "userid": uid,
           }).then((_) {
             print("update success!");
           });
@@ -382,6 +458,7 @@ class _TravelModeState extends State<TravelMode> {
                                     MaterialPageRoute(
                                         builder: (context) =>
                                             HomePage(uid, "2")));
+                                timecount = 0;
                                 print("Stop");
                               },
                             )),

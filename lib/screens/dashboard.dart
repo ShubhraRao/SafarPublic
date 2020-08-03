@@ -8,6 +8,7 @@ import 'package:jiffy/jiffy.dart';
 import 'package:potholedetection/ANewLogin/login.dart';
 import 'package:potholedetection/screens/alertmode.dart';
 import 'package:potholedetection/screens/cameramode.dart';
+import 'package:potholedetection/screens/fixedpots.dart';
 import 'package:potholedetection/screens/maps.dart';
 import 'package:potholedetection/screens/mypotholes.dart';
 import 'package:potholedetection/screens/newtravel.dart';
@@ -34,6 +35,8 @@ class _MainDashboardState extends State<MainDashboard> {
   List<DocumentSnapshot> listfixed = List();
   List<DocumentSnapshot> newfixed = List();
 
+  int shownotif=0;
+
   bool isLoading = false;
   int count1 = 0;
   int count2 = 0;
@@ -42,6 +45,7 @@ class _MainDashboardState extends State<MainDashboard> {
   int count5 = 0;
   int count6 = 0;
   int count7 = 0;
+  List<DocumentSnapshot> notif = List();
   List<Countbyuser> countlist = List();
   List<Countbyuser> newcount = List();
   int _currentIndex = 0;
@@ -71,6 +75,7 @@ var rng = new Random();
 
 
     for (int i = 0; i < listfixed.length; i++) {
+       
       for (int j = 0;
           j < listfixed[i].data["userid"].toString().split(',').length;
           j++) {
@@ -79,6 +84,20 @@ var rng = new Random();
         }
       }
     }
+print("fixed");
+    print(newfixed.length);
+notif = [];
+    for(int i =0; i<newfixed.length; i++)
+    {
+      if(newfixed[i].data["seen"]=="no")
+      {
+        setState(() {
+          shownotif = 1;
+        });
+        notif.add(newfixed[i]);
+      }
+    }
+
     a = newlist2.length + newfixed.length;
     print(newlist.length);
     print("lenn");
@@ -229,9 +248,98 @@ var rng = new Random();
     );
   }
 
+  void nopotalert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(32.0))),
+          contentPadding: EdgeInsets.only(top: 10.0),
+          content: Container(
+            width: 300.0,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      "Yay!",
+                      style: TextStyle(fontSize: 20.0),
+                    ),
+                  ],
+                ),
+                SizedBox(
+                  height: 5.0,
+                ),
+                Divider(
+                  color: Colors.grey,
+                  height: 4.0,
+                ),
+                Padding(
+                  padding: EdgeInsets.only(
+                      left: 12.0, right: 12.0, top: 10.0, bottom: 10.0),
+                  child: Text(
+                      notif.length.toString() + " potholes that you reported have been fxed!" ,
+                      textAlign: TextAlign.center),
+                ),
+                InkWell(
+                  onTap: () {
+                    for(int i=0; i<notif.length; i++)
+                    {
+                     Firestore.instance
+                  .collection("fixed_potholes")
+                  .document(notif[i].documentID)
+                  .updateData({
+                "seen":"yes",
+              }).then((_) {
+                print("Success");
+                
+                    });
+                    }
+                    getlist();
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => FixedPotholes(uid: uid, fixed: notif)));
+                  },
+                  child: Container(
+                    padding: EdgeInsets.only(top: 17.0, bottom: 17.0),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF89216B),
+                      borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(32.0),
+                          bottomRight: Radius.circular(32.0)),
+                    ),
+                    child: Text(
+                      "View Details",
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildAppBar() {
     return AppBar(
-      automaticallyImplyLeading: false,
+      leading: IconButton(
+        icon: (shownotif==1) ?Icon(Icons.notifications) : Icon(Icons.notifications_off),
+        onPressed: () {
+          (shownotif==1)? 
+          nopotalert() : null;
+        }
+        ),
+      // automaticallyImplyLeading: false,
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
